@@ -90,7 +90,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	return &Config{
+	c := &Config{
 		Level:            LevelInfo,
 		Flags:            defaultFlags,
 		Backend:          "stdout", // stdout, stderr, syslog, file
@@ -101,6 +101,8 @@ func NewConfig() *Config {
 		FileMode:         0600,
 		ProgressInterval: 10 * time.Second,
 	}
+	c.ParseEnv()
+	return c
 }
 
 func ParseFlags(flags string) int {
@@ -131,7 +133,7 @@ func (cfg *Config) ParseEnv() {
 	cfg.Flags = ParseFlags(os.Getenv("LOGFLAGS"))
 	cfg.Level = ParseLevel(os.Getenv("LOGLEVEL"))
 	if cfg.Level == LevelInvalid {
-		cfg.Level = LevelWarn
+		cfg.Level = LevelInfo
 	}
 }
 
