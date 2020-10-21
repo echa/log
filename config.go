@@ -108,7 +108,7 @@ func NewConfig() *Config {
 func ParseFlags(flags string) int {
 	var cflags int
 	if flags == "" {
-		return cflags
+		return defaultFlags
 	}
 	for _, f := range strings.Split(flags, ",") {
 		switch f {
