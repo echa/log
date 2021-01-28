@@ -57,11 +57,7 @@ func pluralize(str string, count int64) string {
 	return str
 }
 
-func (p *ProgressLogger) LogN(n int) {
-	p.Log(n, time.Time{})
-}
-
-func (p *ProgressLogger) Log(n int, ts time.Time, extra ...string) {
+func (p *ProgressLogger) Log(n int, extra ...string) {
 	p.Lock()
 	defer p.Unlock()
 	p.calls++
@@ -76,21 +72,15 @@ func (p *ProgressLogger) Log(n int, ts time.Time, extra ...string) {
 	tDuration := duration.Truncate(10 * time.Millisecond)
 
 	// Log information about the event.
-	extraString := ""
+	suffix := ""
 	if ex := strings.Join(extra, " "); len(ex) > 0 {
-		extraString = " (" + ex + ")"
+		suffix = " (" + ex + ")"
 	}
-	tm := ts.UTC().Format("2006-01-02 15:04:05 MST ")
-	if ts.IsZero() {
-		tm = ""
-	}
-	p.logger.Infof("%s %d %s in %s%s",
+	p.logger.Infof("%s %d %s in %s"+suffix,
 		p.action,
 		p.events,
 		pluralize(p.event, p.events),
 		tDuration,
-		tm,
-		extraString,
 	)
 
 	p.calls = 0
