@@ -9,11 +9,12 @@ import (
 	"time"
 )
 
-var ProgressInterval = 10 * time.Second
+var defaultProgressInterval = 10 * time.Second
 
 type ProgressLogger struct {
-	name        string
+	action      string
 	event       string
+	interval    time.Duration
 	calls       int64
 	events      int64
 	lastLogTime time.Time
@@ -21,22 +22,35 @@ type ProgressLogger struct {
 	sync.Mutex
 }
 
-func NewProgressLogger(name, event string, logger Logger) *ProgressLogger {
+func NewProgressLogger(logger Logger) *ProgressLogger {
 	if logger == nil {
 		logger = Log
 	}
 	return &ProgressLogger{
-		name:        name,
-		event:       event,
+		action:      "Processed",
+		event:       "call",
+		interval:    defaultProgressInterval,
 		lastLogTime: time.Now(),
 		logger:      logger,
 	}
 }
 
+func (l *ProgressLogger) SetAction(action string) *ProgressLogger {
+	l.action = action
+	return l
+}
+
+func (l *ProgressLogger) SetEvent(event string) *ProgressLogger {
+	l.event = event
+	return l
+}
+
+func (l *ProgressLogger) SetInterval(interval time.Duration) *ProgressLogger {
+	l.interval = interval
+	return l
+}
+
 func pluralize(str string, count int64) string {
-	if str == "" {
-		str = "call"
-	}
 	if count == 0 || count > 1 {
 		str += "s"
 	}
@@ -54,7 +68,7 @@ func (p *ProgressLogger) Log(n int, ts time.Time, extra ...string) {
 	p.events += int64(n)
 	now := time.Now()
 	duration := now.Sub(p.lastLogTime)
-	if duration < ProgressInterval || p.events == 0 {
+	if duration < p.interval || p.events == 0 {
 		return
 	}
 
@@ -62,27 +76,22 @@ func (p *ProgressLogger) Log(n int, ts time.Time, extra ...string) {
 	tDuration := duration.Truncate(10 * time.Millisecond)
 
 	// Log information about the event.
-	eventStr := p.event
-	if p.events == 1 {
-		eventStr = eventStr[:len(eventStr)-1]
-	}
-	callType := ""
-	if len(extra) > 0 {
-		callType = extra[0]
-		extra = extra[1:]
-	}
-	callStr := pluralize(callType, p.calls)
 	extraString := ""
 	if ex := strings.Join(extra, " "); len(ex) > 0 {
-		extraString = ", " + ex
+		extraString = " (" + ex + ")"
 	}
 	tm := ts.UTC().Format("2006-01-02 15:04:05 MST ")
 	if ts.IsZero() {
 		tm = ""
 	}
-	p.logger.Infof("%s: processed %d %sin %s (%s, %d %s%s)",
-		p.name, p.events, eventStr, tDuration,
-		tm, p.calls, callStr, extraString)
+	p.logger.Infof("%s %d %s in %s%s",
+		p.action,
+		p.events,
+		pluralize(p.event, p.events),
+		tDuration,
+		tm,
+		extraString,
+	)
 
 	p.calls = 0
 	p.events = 0

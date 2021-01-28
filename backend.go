@@ -30,7 +30,7 @@ func Init(config *Config) {
 }
 
 func New(config *Config) *Backend {
-	ProgressInterval = config.ProgressInterval
+	defaultProgressInterval = config.ProgressInterval
 	switch strings.ToLower(config.Backend) {
 	case "file":
 		if config.Filename != "" {
