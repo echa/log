@@ -87,3 +87,21 @@ func (p *ProgressLogger) Log(n int, extra ...string) {
 	p.events = 0
 	p.lastLogTime = now
 }
+
+func (p *ProgressLogger) Flush() {
+	p.Lock()
+	defer p.Unlock()
+	if p.calls == 0 {
+		return
+	}
+	now := time.Now()
+	p.logger.Infof("%s %d %s in %s",
+		p.action,
+		p.events,
+		pluralize(p.event, p.events),
+		now.Sub(p.lastLogTime),
+	)
+	p.calls = 0
+	p.events = 0
+	p.lastLogTime = now
+}
