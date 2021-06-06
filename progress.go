@@ -4,6 +4,7 @@
 package log
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -74,7 +75,7 @@ func (p *ProgressLogger) Log(n int, extra ...string) {
 	// Log information about the event.
 	suffix := ""
 	if ex := strings.Join(extra, " "); len(ex) > 0 {
-		suffix = " (" + ex + ")"
+		suffix = fmt.Sprintf(" (%d %s, %s)", p.calls, pluralize("call", p.calls), ex)
 	}
 	p.logger.Infof("%s %d %s in %s"+suffix,
 		p.action,
