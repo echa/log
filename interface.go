@@ -38,6 +38,7 @@ type Logger interface {
 	Fatalf(f string, v ...interface{})
 	Level() Level
 	SetLevel(Level) Logger
+	SetLevelString(string) Logger
 	Logger() *logpkg.Logger
 	Clone(tag string) Logger
 }
@@ -57,6 +58,9 @@ func Fatal(v ...interface{})            { Log.Fatal(v...) }
 func Fatalf(s string, v ...interface{}) { Log.Fatalf(s, v...) }
 
 func SetLevel(l Level) Logger { Log.SetLevel(l); return Log }
+
+func SetLevelString(l string) Logger { return SetLevel(ParseLevel(l)) }
+
 func NewLogger(tag string) Logger {
 	if b, ok := Log.(*Backend); ok {
 		return b.NewLogger(tag)

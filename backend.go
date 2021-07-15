@@ -108,6 +108,10 @@ func (x *Backend) SetLevel(l Level) Logger {
 	return x
 }
 
+func (x *Backend) SetLevelString(s string) Logger {
+	return x.SetLevel(ParseLevel(s))
+}
+
 func (x Backend) Error(v ...interface{}) {
 	if x.level > LevelError {
 		return
