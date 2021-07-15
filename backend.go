@@ -102,7 +102,9 @@ func (x Backend) Level() Level {
 }
 
 func (x *Backend) SetLevel(l Level) Logger {
-	x.level = l
+	if l != LevelInvalid {
+		x.level = l
+	}
 	return x
 }
 
