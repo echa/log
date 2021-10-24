@@ -13,9 +13,10 @@ import (
 )
 
 type Backend struct {
-	level Level
-	log   *log.Logger
-	tag   string
+	level   Level
+	log     *log.Logger
+	tag     string
+	sampler *Sampler
 }
 
 var (
@@ -36,7 +37,7 @@ func New(config *Config) *Backend {
 		if config.Filename != "" {
 			if file, err := os.OpenFile(config.Filename,
 				os.O_WRONLY|os.O_CREATE|os.O_APPEND, config.FileMode); err == nil {
-				return &Backend{config.Level, log.New(file, "", config.Flags), ""}
+				return &Backend{config.Level, log.New(file, "", config.Flags), "", nil}
 			} else {
 				log.Fatalln("FATAL: Cannot open logfile", config.Filename, ":", err.Error())
 			}
@@ -44,9 +45,9 @@ func New(config *Config) *Backend {
 	case "syslog":
 		return NewSyslog(config)
 	case "stdout":
-		return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), ""}
+		return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil}
 	case "stderr":
-		return &Backend{config.Level, log.New(os.Stderr, "", config.Flags), ""}
+		return &Backend{config.Level, log.New(os.Stderr, "", config.Flags), "", nil}
 	default:
 		log.Fatalln("FATAL: Invalid log backend", config.Backend)
 	}
@@ -63,10 +64,16 @@ func (x Backend) NewLogger(subsystem string) Logger {
 
 func (x Backend) Clone(tag string) Logger {
 	return &Backend{
-		level: x.level,
-		log:   x.log,
-		tag:   x.tag + strings.TrimSpace(tag) + " ",
+		level:   x.level,
+		log:     x.log,
+		tag:     x.tag + strings.TrimSpace(tag) + " ",
+		sampler: x.sampler.Clone(),
 	}
+}
+
+func (x *Backend) WithSampler(s *Sampler) Logger {
+	x.sampler = s
+	return x
 }
 
 func (x Backend) NewWriter(l Level) io.Writer {
@@ -113,56 +120,56 @@ func (x *Backend) SetLevelString(s string) Logger {
 }
 
 func (x Backend) Error(v ...interface{}) {
-	if x.level > LevelError {
+	if !x.shouldLog(LevelError) {
 		return
 	}
 	x.output(LevelError, v...)
 }
 
 func (x Backend) Errorf(f string, v ...interface{}) {
-	if x.level > LevelError {
+	if !x.shouldLog(LevelError) {
 		return
 	}
 	x.outputf(LevelError, f, v...)
 }
 
 func (x Backend) Warn(v ...interface{}) {
-	if x.level > LevelWarn {
+	if !x.shouldLog(LevelWarn) {
 		return
 	}
 	x.output(LevelWarn, v...)
 }
 
 func (x Backend) Warnf(f string, v ...interface{}) {
-	if x.level > LevelWarn {
+	if !x.shouldLog(LevelWarn) {
 		return
 	}
 	x.outputf(LevelWarn, f, v...)
 }
 
 func (x Backend) Info(v ...interface{}) {
-	if x.level > LevelInfo {
+	if !x.shouldLog(LevelInfo) {
 		return
 	}
 	x.output(LevelInfo, v...)
 }
 
 func (x Backend) Infof(f string, v ...interface{}) {
-	if x.level > LevelInfo {
+	if !x.shouldLog(LevelInfo) {
 		return
 	}
 	x.outputf(LevelInfo, f, v...)
 }
 
 func (x Backend) Debug(v ...interface{}) {
-	if x.level > LevelDebug {
+	if !x.shouldLog(LevelDebug) {
 		return
 	}
 	x.output(LevelDebug, v...)
 }
 
 func (x Backend) Debugf(f string, v ...interface{}) {
-	if x.level > LevelDebug {
+	if !x.shouldLog(LevelDebug) {
 		return
 	}
 	x.outputf(LevelDebug, f, v...)
@@ -177,14 +184,14 @@ func (x Backend) Fatalf(f string, v ...interface{}) {
 }
 
 func (x Backend) Trace(v ...interface{}) {
-	if x.level > LevelTrace {
+	if !x.shouldLog(LevelTrace) {
 		return
 	}
 	x.output(LevelTrace, v...)
 }
 
 func (x Backend) Tracef(f string, v ...interface{}) {
-	if x.level > LevelTrace {
+	if !x.shouldLog(LevelTrace) {
 		return
 	}
 	x.outputf(LevelTrace, f, v...)
@@ -201,4 +208,14 @@ func (x Backend) outputf(lvl Level, f string, v ...interface{}) {
 	m := append(make([]interface{}, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
 	x.log.Output(calldepth, fmt.Sprintf(f, m...))
+}
+
+func (x Backend) shouldLog(lvl Level) bool {
+	if x.level > lvl {
+		return false
+	}
+	if x.sampler != nil {
+		return x.sampler.Sample()
+	}
+	return true
 }

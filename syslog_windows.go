@@ -10,5 +10,5 @@ import (
 
 // no syslog on windows, write to stdout
 func NewSyslog(config *Config) *Backend {
-	return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), ""}
+	return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil}
 }

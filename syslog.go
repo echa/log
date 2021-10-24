@@ -27,7 +27,7 @@ func NewSyslog(config *Config) *Backend {
 			log.Fatalln("FATAL: Cannot open syslog address", config.Addr, ":", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), ""}
+		return &Backend{config.Level, log.New(writer, "", 0), "", nil}
 	} else {
 		writer, err := syslog.New(
 			syslogFacilityToEnum(config.Facility)|syslog.LOG_INFO,
@@ -37,7 +37,7 @@ func NewSyslog(config *Config) *Backend {
 			log.Fatalln("FATAL: Cannot open syslog:", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), ""}
+		return &Backend{config.Level, log.New(writer, "", 0), "", nil}
 	}
 }
 

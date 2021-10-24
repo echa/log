@@ -41,6 +41,7 @@ type Logger interface {
 	SetLevelString(string) Logger
 	Logger() *logpkg.Logger
 	Clone(tag string) Logger
+	WithSampler(s *Sampler) Logger
 }
 
 // package level forwarders to the real logger implementation
