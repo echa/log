@@ -40,7 +40,8 @@ type Logger interface {
 	SetLevel(Level) Logger
 	SetLevelString(string) Logger
 	Logger() *logpkg.Logger
-	Clone(tag string) Logger
+	Clone() Logger
+	WithTag(tag string) Logger
 	WithSampler(s *Sampler) Logger
 }
 

@@ -62,13 +62,21 @@ func (x Backend) NewLogger(subsystem string) Logger {
 	}
 }
 
-func (x Backend) Clone(tag string) Logger {
+func (x Backend) Clone() Logger {
 	return &Backend{
 		level:   x.level,
 		log:     x.log,
-		tag:     x.tag + strings.TrimSpace(tag) + " ",
+		tag:     x.tag,
 		sampler: x.sampler.Clone(),
 	}
+}
+
+func (x *Backend) WithTag(tag string) Logger {
+	tag = strings.TrimSpace(tag)
+	if tag != "" {
+		x.tag += tag + " "
+	}
+	return x
 }
 
 func (x *Backend) WithSampler(s *Sampler) Logger {
