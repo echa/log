@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 KIDTSUNAMI
+// Copyright (c) 2018-2022 KIDTSUNAMI
 // Author: alex@kidtsunami.com
 
 package log
@@ -21,7 +21,7 @@ type Backend struct {
 
 var (
 	Log      Logger = New(NewConfig())
-	Disabled Logger = &Backend{level: LevelOff}
+	Disabled Logger = &Backend{level: LevelOff, log: log.Default()}
 )
 
 const calldepth = 4
