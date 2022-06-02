@@ -1,16 +1,19 @@
-// Copyright (c) 2018-2019 KIDTSUNAMI
+// Copyright (c) 2018-2022 KIDTSUNAMI
 // Author: alex@kidtsunami.com
 
 package log
 
 import (
 	logpkg "log"
+
+	"github.com/fatih/color"
 )
 
 type LogFn func(...interface{})
 type LogfFn func(string, ...interface{})
-
 type Level int
+
+var Noop = func(string, ...interface{}) {}
 
 const (
 	LevelTrace Level = iota
@@ -23,7 +26,17 @@ const (
 	LevelInvalid
 )
 
+var (
+	ColorTrace = color.FgBlue
+	ColorDebug = color.FgCyan
+	ColorInfo  = color.FgGreen
+	ColorWarn  = color.FgYellow
+	ColorError = color.FgRed
+	ColorFatal = color.FgMagenta
+)
+
 type Logger interface {
+	Noop(...interface{})
 	Trace(v ...interface{})
 	Tracef(f string, v ...interface{})
 	Debug(v ...interface{})
@@ -43,6 +56,7 @@ type Logger interface {
 	Clone() Logger
 	WithTag(tag string) Logger
 	WithSampler(s *Sampler) Logger
+	WithColor(b bool) Logger
 }
 
 // package level forwarders to the real logger implementation

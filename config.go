@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 KIDTSUNAMI
+// Copyright (c) 2018-2022 KIDTSUNAMI
 // Author: alex@kidtsunami.com
 
 package log
@@ -9,11 +9,22 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 var defaultFlags int = log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC
 
 var levelStrs = [...]string{"TRCE ", "DEBG ", "INFO ", "WARN ", "ERRO ", "CRIT ", "OFF  "}
+
+var levelColors = [...]*color.Color{
+	color.New(ColorTrace),
+	color.New(ColorDebug),
+	color.New(ColorInfo),
+	color.New(ColorWarn),
+	color.New(ColorError),
+	color.New(ColorFatal),
+}
 
 func ParseLevel(s string) Level {
 	switch strings.ToLower(s) {
@@ -87,6 +98,7 @@ type Config struct {
 	Filename         string        `json:"filename"`
 	FileMode         os.FileMode   `json:"filemode"`
 	ProgressInterval time.Duration `json:"progress"`
+	NoColor          bool          `json:"nocolor"`
 }
 
 func NewConfig() *Config {
@@ -96,8 +108,8 @@ func NewConfig() *Config {
 		Backend:          "stdout", // stdout, stderr, syslog, file
 		Addr:             "",
 		Facility:         "local0",
-		Ident:            "blockwatch",
-		Filename:         "blockwatch.log",
+		Ident:            "logfile",
+		Filename:         "logfile.log",
 		FileMode:         0600,
 		ProgressInterval: 10 * time.Second,
 	}

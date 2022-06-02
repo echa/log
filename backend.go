@@ -10,18 +10,22 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 type Backend struct {
-	level   Level
-	log     *log.Logger
-	tag     string
-	sampler *Sampler
+	level    Level
+	log      *log.Logger
+	tag      string
+	sampler  *Sampler
+	usecolor bool
 }
 
 var (
-	Log      Logger = New(NewConfig())
-	Disabled Logger = &Backend{level: LevelOff, log: log.Default()}
+	Log         Logger = New(NewConfig())
+	Disabled    Logger = &Backend{level: LevelOff, log: log.Default()}
+	isColorTerm bool   = !color.NoColor
 )
 
 const calldepth = 4
@@ -32,12 +36,13 @@ func Init(config *Config) {
 
 func New(config *Config) *Backend {
 	defaultProgressInterval = config.ProgressInterval
+	withColor := isColorTerm && !config.NoColor
 	switch strings.ToLower(config.Backend) {
 	case "file":
 		if config.Filename != "" {
 			if file, err := os.OpenFile(config.Filename,
 				os.O_WRONLY|os.O_CREATE|os.O_APPEND, config.FileMode); err == nil {
-				return &Backend{config.Level, log.New(file, "", config.Flags), "", nil}
+				return &Backend{config.Level, log.New(file, "", config.Flags), "", nil, false}
 			} else {
 				log.Fatalln("FATAL: Cannot open logfile", config.Filename, ":", err.Error())
 			}
@@ -45,9 +50,9 @@ func New(config *Config) *Backend {
 	case "syslog":
 		return NewSyslog(config)
 	case "stdout":
-		return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil}
+		return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil, withColor}
 	case "stderr":
-		return &Backend{config.Level, log.New(os.Stderr, "", config.Flags), "", nil}
+		return &Backend{config.Level, log.New(os.Stderr, "", config.Flags), "", nil, withColor}
 	default:
 		log.Fatalln("FATAL: Invalid log backend", config.Backend)
 	}
@@ -56,18 +61,20 @@ func New(config *Config) *Backend {
 
 func (x Backend) NewLogger(subsystem string) Logger {
 	return &Backend{
-		level: x.level,
-		log:   x.log,
-		tag:   strings.TrimSpace(subsystem) + " ",
+		level:    x.level,
+		log:      x.log,
+		tag:      strings.TrimSpace(subsystem) + " ",
+		usecolor: x.usecolor,
 	}
 }
 
 func (x Backend) Clone() Logger {
 	return &Backend{
-		level:   x.level,
-		log:     x.log,
-		tag:     x.tag,
-		sampler: x.sampler.Clone(),
+		level:    x.level,
+		log:      x.log,
+		tag:      x.tag,
+		sampler:  x.sampler.Clone(),
+		usecolor: x.usecolor,
 	}
 }
 
@@ -84,14 +91,20 @@ func (x *Backend) WithSampler(s *Sampler) Logger {
 	return x
 }
 
+func (x *Backend) WithColor(b bool) Logger {
+	x.usecolor = b
+	return x
+}
+
 func (x Backend) NewWriter(l Level) io.Writer {
 	if x.level > l {
 		return ioutil.Discard
 	}
 	writer := &Backend{
-		level: l,
-		log:   x.log,
-		tag:   x.tag,
+		level:    l,
+		log:      x.log,
+		tag:      x.tag,
+		usecolor: x.usecolor,
 	}
 	return writer
 }
@@ -126,6 +139,8 @@ func (x *Backend) SetLevel(l Level) Logger {
 func (x *Backend) SetLevelString(s string) Logger {
 	return x.SetLevel(ParseLevel(s))
 }
+
+func (x Backend) Noop(...interface{}) {}
 
 func (x Backend) Error(v ...interface{}) {
 	if !x.shouldLog(LevelError) {
@@ -208,14 +223,22 @@ func (x Backend) Tracef(f string, v ...interface{}) {
 func (x Backend) output(lvl Level, v ...interface{}) {
 	m := append(make([]interface{}, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
-	x.log.Output(calldepth, fmt.Sprint(m...))
+	if x.usecolor {
+		x.log.Output(calldepth, levelColors[lvl].Sprint(m...))
+	} else {
+		x.log.Output(calldepth, fmt.Sprint(m...))
+	}
 }
 
 func (x Backend) outputf(lvl Level, f string, v ...interface{}) {
 	f = strings.Join([]string{"%s%s", f}, "") // prefix tag and level %s
 	m := append(make([]interface{}, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
-	x.log.Output(calldepth, fmt.Sprintf(f, m...))
+	if x.usecolor {
+		x.log.Output(calldepth, levelColors[lvl].Sprintf(f, m...))
+	} else {
+		x.log.Output(calldepth, fmt.Sprintf(f, m...))
+	}
 }
 
 func (x Backend) shouldLog(lvl Level) bool {

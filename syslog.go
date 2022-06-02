@@ -1,5 +1,6 @@
-// Copyright (c) 2018-2019 KIDTSUNAMI
+// Copyright (c) 2018-2022 KIDTSUNAMI
 // Author: alex@kidtsunami.com
+//go:build !windows
 // +build !windows
 
 package log
@@ -27,7 +28,7 @@ func NewSyslog(config *Config) *Backend {
 			log.Fatalln("FATAL: Cannot open syslog address", config.Addr, ":", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), "", nil}
+		return &Backend{config.Level, log.New(writer, "", 0), "", nil, false}
 	} else {
 		writer, err := syslog.New(
 			syslogFacilityToEnum(config.Facility)|syslog.LOG_INFO,
@@ -37,7 +38,7 @@ func NewSyslog(config *Config) *Backend {
 			log.Fatalln("FATAL: Cannot open syslog:", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), "", nil}
+		return &Backend{config.Level, log.New(writer, "", 0), "", nil, false}
 	}
 }
 
