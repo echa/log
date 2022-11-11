@@ -4,11 +4,13 @@
 package log
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/fatih/color"
@@ -199,11 +201,17 @@ func (x Backend) Debugf(f string, v ...interface{}) {
 }
 
 func (x Backend) Fatal(v ...interface{}) {
-	x.log.Fatalln(v...)
+	x.output(LevelFatal, v...)
+	x.stackTrace(LevelFatal, 3)
+	x.output(LevelFatal, "Exiting process")
+	os.Exit(1)
 }
 
 func (x Backend) Fatalf(f string, v ...interface{}) {
-	x.log.Fatalf(f, v...)
+	x.outputf(LevelFatal, f, v...)
+	x.stackTrace(LevelFatal, 3)
+	x.output(LevelFatal, "Exiting process")
+	os.Exit(1)
 }
 
 func (x Backend) Trace(v ...interface{}) {
@@ -249,4 +257,19 @@ func (x Backend) shouldLog(lvl Level) bool {
 		return x.sampler.Sample()
 	}
 	return true
+}
+
+func (x Backend) stackTrace(lvl Level, skip int) {
+	trace := debug.Stack()
+	skip = skip*2 + 1
+	for _, v := range bytes.Split(trace, []byte("\n")) {
+		if len(v) == 0 {
+			continue
+		}
+		if skip > 0 {
+			skip--
+			continue
+		}
+		x.output(lvl, string(v))
+	}
 }
