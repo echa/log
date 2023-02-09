@@ -98,6 +98,11 @@ func (x *Backend) WithColor(b bool) Logger {
 	return x
 }
 
+func (x *Backend) WithFlags(f int) Logger {
+	x.log.SetFlags(f)
+	return x
+}
+
 func (x Backend) NewWriter(l Level) io.Writer {
 	if x.level > l {
 		return ioutil.Discard

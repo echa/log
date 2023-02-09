@@ -57,6 +57,7 @@ type Logger interface {
 	WithTag(tag string) Logger
 	WithSampler(s *Sampler) Logger
 	WithColor(b bool) Logger
+	WithFlags(f int) Logger
 }
 
 // package level forwarders to the real logger implementation
