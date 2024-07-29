@@ -147,94 +147,100 @@ func (x *Backend) SetLevelString(s string) Logger {
 	return x.SetLevel(ParseLevel(s))
 }
 
-func (x Backend) Noop(...interface{}) {}
+func (x Backend) Noop(...any) {}
 
-func (x Backend) Error(v ...interface{}) {
+func (x Backend) Error(v ...any) {
 	if !x.shouldLog(LevelError) {
 		return
 	}
 	x.output(LevelError, v...)
 }
 
-func (x Backend) Errorf(f string, v ...interface{}) {
+func (x Backend) Errorf(f string, v ...any) {
 	if !x.shouldLog(LevelError) {
 		return
 	}
 	x.outputf(LevelError, f, v...)
 }
 
-func (x Backend) Warn(v ...interface{}) {
+func (x Backend) Warn(v ...any) {
 	if !x.shouldLog(LevelWarn) {
 		return
 	}
 	x.output(LevelWarn, v...)
 }
 
-func (x Backend) Warnf(f string, v ...interface{}) {
+func (x Backend) Warnf(f string, v ...any) {
 	if !x.shouldLog(LevelWarn) {
 		return
 	}
 	x.outputf(LevelWarn, f, v...)
 }
 
-func (x Backend) Info(v ...interface{}) {
+func (x Backend) Info(v ...any) {
 	if !x.shouldLog(LevelInfo) {
 		return
 	}
 	x.output(LevelInfo, v...)
 }
 
-func (x Backend) Infof(f string, v ...interface{}) {
+func (x Backend) Infof(f string, v ...any) {
 	if !x.shouldLog(LevelInfo) {
 		return
 	}
 	x.outputf(LevelInfo, f, v...)
 }
 
-func (x Backend) Debug(v ...interface{}) {
+func (x Backend) Debug(v ...any) {
 	if !x.shouldLog(LevelDebug) {
 		return
 	}
 	x.output(LevelDebug, v...)
 }
 
-func (x Backend) Debugf(f string, v ...interface{}) {
+func (x Backend) Debugf(f string, v ...any) {
 	if !x.shouldLog(LevelDebug) {
 		return
 	}
 	x.outputf(LevelDebug, f, v...)
 }
 
-func (x Backend) Fatal(v ...interface{}) {
+func (x Backend) Fatal(v ...any) {
 	x.output(LevelFatal, v...)
 	x.stackTrace(LevelFatal, 3)
 	x.output(LevelFatal, "Exiting process")
 	os.Exit(1)
 }
 
-func (x Backend) Fatalf(f string, v ...interface{}) {
+func (x Backend) Fatalf(f string, v ...any) {
 	x.outputf(LevelFatal, f, v...)
 	x.stackTrace(LevelFatal, 3)
 	x.output(LevelFatal, "Exiting process")
 	os.Exit(1)
 }
 
-func (x Backend) Trace(v ...interface{}) {
+func (x Backend) Trace(v ...any) {
 	if !x.shouldLog(LevelTrace) {
 		return
 	}
 	x.output(LevelTrace, v...)
 }
 
-func (x Backend) Tracef(f string, v ...interface{}) {
+func (x Backend) Tracef(f string, v ...any) {
 	if !x.shouldLog(LevelTrace) {
 		return
 	}
 	x.outputf(LevelTrace, f, v...)
 }
 
-func (x Backend) output(lvl Level, v ...interface{}) {
-	m := append(make([]interface{}, 0, len(v)+2), lvl.Prefix(), x.tag)
+func (x Backend) output(lvl Level, v ...any) {
+	if len(v) == 1 {
+		if fn, ok := v[0].(func()); ok {
+			fn()
+			return
+		}
+	}
+	m := append(make([]any, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
 	if x.usecolor {
 		x.log.Output(calldepth, levelColors[lvl].Sprint(m...))
@@ -243,9 +249,9 @@ func (x Backend) output(lvl Level, v ...interface{}) {
 	}
 }
 
-func (x Backend) outputf(lvl Level, f string, v ...interface{}) {
+func (x Backend) outputf(lvl Level, f string, v ...any) {
 	f = strings.Join([]string{"%s%s", f}, "") // prefix tag and level %s
-	m := append(make([]interface{}, 0, len(v)+2), lvl.Prefix(), x.tag)
+	m := append(make([]any, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
 	if x.usecolor {
 		x.log.Output(calldepth, levelColors[lvl].Sprintf(f, m...))

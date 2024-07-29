@@ -9,11 +9,11 @@ import (
 	"github.com/fatih/color"
 )
 
-type LogFn func(...interface{})
-type LogfFn func(string, ...interface{})
+type LogFn func(...any)
+type LogfFn func(string, ...any)
 type Level int
 
-var Noop = func(string, ...interface{}) {}
+var Noop = func(string, ...any) {}
 
 const (
 	LevelTrace Level = iota
@@ -36,19 +36,19 @@ var (
 )
 
 type Logger interface {
-	Noop(...interface{})
-	Trace(v ...interface{})
-	Tracef(f string, v ...interface{})
-	Debug(v ...interface{})
-	Debugf(f string, v ...interface{})
-	Info(v ...interface{})
-	Infof(f string, v ...interface{})
-	Warn(v ...interface{})
-	Warnf(f string, v ...interface{})
-	Error(v ...interface{})
-	Errorf(f string, v ...interface{})
-	Fatal(v ...interface{})
-	Fatalf(f string, v ...interface{})
+	Noop(...any)
+	Trace(v ...any)
+	Tracef(f string, v ...any)
+	Debug(v ...any)
+	Debugf(f string, v ...any)
+	Info(v ...any)
+	Infof(f string, v ...any)
+	Warn(v ...any)
+	Warnf(f string, v ...any)
+	Error(v ...any)
+	Errorf(f string, v ...any)
+	Fatal(v ...any)
+	Fatalf(f string, v ...any)
 	Level() Level
 	SetLevel(Level) Logger
 	SetLevelString(string) Logger
@@ -61,18 +61,18 @@ type Logger interface {
 }
 
 // package level forwarders to the real logger implementation
-func Trace(v ...interface{})            { Log.Trace(v...) }
-func Tracef(s string, v ...interface{}) { Log.Tracef(s, v...) }
-func Error(v ...interface{})            { Log.Error(v...) }
-func Errorf(s string, v ...interface{}) { Log.Errorf(s, v...) }
-func Warn(v ...interface{})             { Log.Warn(v...) }
-func Warnf(s string, v ...interface{})  { Log.Warnf(s, v...) }
-func Info(v ...interface{})             { Log.Info(v...) }
-func Infof(s string, v ...interface{})  { Log.Infof(s, v...) }
-func Debug(v ...interface{})            { Log.Debug(v...) }
-func Debugf(s string, v ...interface{}) { Log.Debugf(s, v...) }
-func Fatal(v ...interface{})            { Log.Fatal(v...) }
-func Fatalf(s string, v ...interface{}) { Log.Fatalf(s, v...) }
+func Trace(v ...any)            { Log.Trace(v...) }
+func Tracef(s string, v ...any) { Log.Tracef(s, v...) }
+func Error(v ...any)            { Log.Error(v...) }
+func Errorf(s string, v ...any) { Log.Errorf(s, v...) }
+func Warn(v ...any)             { Log.Warn(v...) }
+func Warnf(s string, v ...any)  { Log.Warnf(s, v...) }
+func Info(v ...any)             { Log.Info(v...) }
+func Infof(s string, v ...any)  { Log.Infof(s, v...) }
+func Debug(v ...any)            { Log.Debug(v...) }
+func Debugf(s string, v ...any) { Log.Debugf(s, v...) }
+func Fatal(v ...any)            { Log.Fatal(v...) }
+func Fatalf(s string, v ...any) { Log.Fatalf(s, v...) }
 
 func SetLevel(l Level) Logger { Log.SetLevel(l); return Log }
 
@@ -84,21 +84,4 @@ func NewLogger(tag string) Logger {
 	} else {
 		return New(NewConfig()).NewLogger(tag)
 	}
-}
-
-// Closure is a closure that can be printed with %v to be used to
-// generate expensive-to-create data for a detailed log level and avoid doing
-// the work if the data isn't printed.
-type Closure func() string
-
-// String invokes the log closure and returns the results string.
-func (c Closure) String() string {
-	return c()
-}
-
-// NewLogClosure returns a new closure over the passed function which allows
-// it to be used as a parameter in a logging function that is only invoked when
-// the logging level is such that the message will actually be logged.
-func NewClosure(c func() string) Closure {
-	return Closure(c)
 }
