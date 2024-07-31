@@ -5,7 +5,7 @@ package log
 
 import (
 	"fmt"
-	"log"
+	stdlog "log"
 	"os"
 	"strings"
 	"time"
@@ -13,7 +13,7 @@ import (
 	"github.com/fatih/color"
 )
 
-var defaultFlags int = log.Ldate | log.Ltime | log.Lmicroseconds | log.LUTC
+var defaultFlags int = stdlog.Ldate | stdlog.Ltime | stdlog.Lmicroseconds | stdlog.LUTC
 
 var levelStrs = [...]string{"TRCE ", "DEBG ", "INFO ", "WARN ", "ERRO ", "CRIT ", "OFF  "}
 
@@ -125,17 +125,17 @@ func ParseFlags(flags string) int {
 	for _, f := range strings.Split(flags, ",") {
 		switch f {
 		case "longfile":
-			cflags |= log.Llongfile
+			cflags |= stdlog.Llongfile
 		case "shortfile":
-			cflags |= log.Lshortfile
+			cflags |= stdlog.Lshortfile
 		case "date":
-			cflags |= log.Ldate
+			cflags |= stdlog.Ldate
 		case "time":
-			cflags |= log.Ltime
+			cflags |= stdlog.Ltime
 		case "micro":
-			cflags |= log.Lmicroseconds
+			cflags |= stdlog.Lmicroseconds
 		case "utc":
-			cflags |= log.LUTC
+			cflags |= stdlog.LUTC
 		}
 	}
 	return cflags

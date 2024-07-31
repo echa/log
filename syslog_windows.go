@@ -4,11 +4,11 @@
 package log
 
 import (
-	"log"
+	stdlog "log"
 	"os"
 )
 
 // no syslog on windows, write to stdout
 func NewSyslog(config *Config) *Backend {
-	return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil, false}
+	return &Backend{config.Level, stdlog.New(os.Stdout, "", config.Flags), "", nil, false}
 }

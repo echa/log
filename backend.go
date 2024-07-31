@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	stdlog "log"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -18,7 +18,7 @@ import (
 
 type Backend struct {
 	level    Level
-	log      *log.Logger
+	log      *stdlog.Logger
 	tag      string
 	sampler  *Sampler
 	usecolor bool
@@ -26,37 +26,41 @@ type Backend struct {
 
 var (
 	Log         Logger = New(NewConfig())
-	Disabled    Logger = &Backend{level: LevelOff, log: log.Default()}
+	Disabled    Logger = &Backend{level: LevelOff, log: stdlog.Default()}
 	isColorTerm bool   = !color.NoColor
 )
 
 const calldepth = 4
 
-func Init(config *Config) {
-	Log = New(config)
+func Init(c *Config) {
+	Log = New(c)
 }
 
-func New(config *Config) *Backend {
-	defaultProgressInterval = config.ProgressInterval
-	withColor := isColorTerm && !config.NoColor
-	switch strings.ToLower(config.Backend) {
+func New(c *Config) *Backend {
+	if c == nil {
+		c = NewConfig()
+	}
+	defaultProgressInterval = c.ProgressInterval
+	withColor := isColorTerm || os.Getenv("LOGCOLOR") != ""
+	color.NoColor = !withColor
+	switch strings.ToLower(c.Backend) {
 	case "file":
-		if config.Filename != "" {
-			if file, err := os.OpenFile(config.Filename,
-				os.O_WRONLY|os.O_CREATE|os.O_APPEND, config.FileMode); err == nil {
-				return &Backend{config.Level, log.New(file, "", config.Flags), "", nil, false}
+		if c.Filename != "" {
+			if file, err := os.OpenFile(c.Filename,
+				os.O_WRONLY|os.O_CREATE|os.O_APPEND, c.FileMode); err == nil {
+				return &Backend{c.Level, stdlog.New(file, "", c.Flags), "", nil, false}
 			} else {
-				log.Fatalln("FATAL: Cannot open logfile", config.Filename, ":", err.Error())
+				stdlog.Fatalln("FATAL: Cannot open logfile", c.Filename, ":", err.Error())
 			}
 		}
 	case "syslog":
-		return NewSyslog(config)
+		return NewSyslog(c)
 	case "stdout":
-		return &Backend{config.Level, log.New(os.Stdout, "", config.Flags), "", nil, withColor}
+		return &Backend{c.Level, stdlog.New(os.Stdout, "", c.Flags), "", nil, withColor}
 	case "stderr":
-		return &Backend{config.Level, log.New(os.Stderr, "", config.Flags), "", nil, withColor}
+		return &Backend{c.Level, stdlog.New(os.Stderr, "", c.Flags), "", nil, withColor}
 	default:
-		log.Fatalln("FATAL: Invalid log backend", config.Backend)
+		stdlog.Fatalln("FATAL: Invalid log backend", c.Backend)
 	}
 	return nil
 }
@@ -95,11 +99,21 @@ func (x *Backend) WithSampler(s *Sampler) Logger {
 
 func (x *Backend) WithColor(b bool) Logger {
 	x.usecolor = b
+	color.NoColor = !b
 	return x
+}
+
+func (x *Backend) IsColor() bool {
+	return x.usecolor
 }
 
 func (x *Backend) WithFlags(f int) Logger {
 	x.log.SetFlags(f)
+	return x
+}
+
+func (x *Backend) WithLogger(l *stdlog.Logger) Logger {
+	x.log = l
 	return x
 }
 
@@ -128,7 +142,7 @@ func (x Backend) Write(p []byte) (n int, err error) {
 	}
 }
 
-func (x Backend) Logger() *log.Logger {
+func (x Backend) Logger() *stdlog.Logger {
 	return x.log
 }
 
@@ -242,22 +256,22 @@ func (x Backend) output(lvl Level, v ...any) {
 	}
 	m := append(make([]any, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
+	print := fmt.Sprint
 	if x.usecolor {
-		x.log.Output(calldepth, levelColors[lvl].Sprint(m...))
-	} else {
-		x.log.Output(calldepth, fmt.Sprint(m...))
+		print = levelColors[lvl].Sprint
 	}
+	x.log.Output(calldepth, print(m...))
 }
 
 func (x Backend) outputf(lvl Level, f string, v ...any) {
 	f = strings.Join([]string{"%s%s", f}, "") // prefix tag and level %s
 	m := append(make([]any, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
+	print := fmt.Sprintf
 	if x.usecolor {
-		x.log.Output(calldepth, levelColors[lvl].Sprintf(f, m...))
-	} else {
-		x.log.Output(calldepth, fmt.Sprintf(f, m...))
+		print = levelColors[lvl].Sprintf
 	}
+	x.log.Output(calldepth, print(f, m...))
 }
 
 func (x Backend) shouldLog(lvl Level) bool {

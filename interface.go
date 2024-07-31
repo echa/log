@@ -4,14 +4,14 @@
 package log
 
 import (
-	logpkg "log"
+	stdlog "log"
 
 	"github.com/fatih/color"
 )
 
 type LogFn func(...any)
 type LogfFn func(string, ...any)
-type Level int
+type Level byte
 
 var Noop = func(string, ...any) {}
 
@@ -50,14 +50,16 @@ type Logger interface {
 	Fatal(v ...any)
 	Fatalf(f string, v ...any)
 	Level() Level
+	IsColor() bool
 	SetLevel(Level) Logger
 	SetLevelString(string) Logger
-	Logger() *logpkg.Logger
+	Logger() *stdlog.Logger
 	Clone() Logger
 	WithTag(tag string) Logger
 	WithSampler(s *Sampler) Logger
 	WithColor(b bool) Logger
 	WithFlags(f int) Logger
+	WithLogger(l *stdlog.Logger) Logger
 }
 
 // package level forwarders to the real logger implementation
@@ -82,6 +84,6 @@ func NewLogger(tag string) Logger {
 	if b, ok := Log.(*Backend); ok {
 		return b.NewLogger(tag)
 	} else {
-		return New(NewConfig()).NewLogger(tag)
+		return New(nil).WithTag(tag)
 	}
 }

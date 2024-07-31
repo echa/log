@@ -6,39 +6,39 @@
 package log
 
 import (
-	"log"
+	stdlog "log"
 	"log/syslog"
 	"strings"
 )
 
-func NewSyslog(config *Config) *Backend {
-	if config.Addr != "" {
-		parts := strings.Split(config.Addr, "://")
+func NewSyslog(c *Config) *Backend {
+	if c.Addr != "" {
+		parts := strings.Split(c.Addr, "://")
 		if len(parts) != 2 {
-			log.Fatalln("FATAL: Invalid syslog address. Must be of form protocol://path (e.g. unix:///dev/log)")
+			stdlog.Fatalln("FATAL: Invalid syslog address. Must be of form protocol://path (e.g. unix:///dev/log)")
 		}
 
 		writer, err := syslog.Dial(
 			parts[0],
 			parts[1],
-			syslogFacilityToEnum(config.Facility)|syslog.LOG_INFO,
-			config.Ident,
+			syslogFacilityToEnum(c.Facility)|syslog.LOG_INFO,
+			c.Ident,
 		)
 		if err != nil {
-			log.Fatalln("FATAL: Cannot open syslog address", config.Addr, ":", err.Error())
+			stdlog.Fatalln("FATAL: Cannot open syslog address", c.Addr, ":", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), "", nil, false}
+		return &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
 	} else {
 		writer, err := syslog.New(
-			syslogFacilityToEnum(config.Facility)|syslog.LOG_INFO,
-			config.Ident,
+			syslogFacilityToEnum(c.Facility)|syslog.LOG_INFO,
+			c.Ident,
 		)
 		if err != nil {
-			log.Fatalln("FATAL: Cannot open syslog:", err.Error())
+			stdlog.Fatalln("FATAL: Cannot open syslog:", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{config.Level, log.New(writer, "", 0), "", nil, false}
+		return &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
 	}
 }
 
@@ -85,7 +85,7 @@ func syslogFacilityToEnum(f string) (p syslog.Priority) {
 	case "local7":
 		p = syslog.LOG_LOCAL7
 	default:
-		log.Fatalln("FATAL: Invalid syslog facility", f)
+		stdlog.Fatalln("FATAL: Invalid syslog facility", f)
 	}
 	return
 }
