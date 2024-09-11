@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 KIDTSUNAMI
+// Copyright (c) 2018-2024 KIDTSUNAMI
 // Author: alex@kidtsunami.com
 
 package log
@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	stdlog "log"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strings"
 
@@ -48,7 +49,12 @@ func New(c *Config) *Backend {
 		if c.Filename != "" {
 			if file, err := os.OpenFile(c.Filename,
 				os.O_WRONLY|os.O_CREATE|os.O_APPEND, c.FileMode); err == nil {
-				return &Backend{c.Level, stdlog.New(file, "", c.Flags), "", nil, false}
+				backend := &Backend{c.Level, stdlog.New(file, "", c.Flags), "", nil, false}
+				runtime.SetFinalizer(backend, func(v any) {
+					b := v.(*Backend)
+					b.log.Writer().(*os.File).Close()
+				})
+				return backend
 			} else {
 				stdlog.Fatalln("FATAL: Cannot open logfile", c.Filename, ":", err.Error())
 			}

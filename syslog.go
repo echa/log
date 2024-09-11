@@ -8,6 +8,7 @@ package log
 import (
 	stdlog "log"
 	"log/syslog"
+	"runtime"
 	"strings"
 )
 
@@ -28,7 +29,12 @@ func NewSyslog(c *Config) *Backend {
 			stdlog.Fatalln("FATAL: Cannot open syslog address", c.Addr, ":", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		backend := &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		runtime.SetFinalizer(backend, func(v any) {
+			b := v.(*Backend)
+			b.log.Writer().(*syslog.Writer).Close()
+		})
+		return backend
 	} else {
 		writer, err := syslog.New(
 			syslogFacilityToEnum(c.Facility)|syslog.LOG_INFO,
@@ -38,7 +44,12 @@ func NewSyslog(c *Config) *Backend {
 			stdlog.Fatalln("FATAL: Cannot open syslog:", err.Error())
 		}
 		// don't 'print' date time
-		return &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		backend := &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		runtime.SetFinalizer(backend, func(v any) {
+			b := v.(*Backend)
+			b.log.Writer().(*syslog.Writer).Close()
+		})
+		return backend
 	}
 }
 
