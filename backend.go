@@ -259,6 +259,9 @@ func (x Backend) output(lvl Level, v ...any) {
 			fn()
 			return
 		}
+		if fn, ok := v[0].(func() string); ok {
+			v[0] = fn()
+		}
 	}
 	m := append(make([]any, 0, len(v)+2), lvl.Prefix(), x.tag)
 	m = append(m, v...)
