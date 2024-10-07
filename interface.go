@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	ColorTrace = color.FgBlue
+	ColorTrace = color.FgHiBlue
 	ColorDebug = color.FgCyan
 	ColorInfo  = color.FgGreen
 	ColorWarn  = color.FgYellow
