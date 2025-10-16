@@ -239,6 +239,16 @@ func (x Backend) Fatalf(f string, v ...any) {
 	os.Exit(1)
 }
 
+func (x Backend) Panic(v ...any) {
+	x.output(LevelFatal, v...)
+	panic("abort")
+}
+
+func (x Backend) Panicf(f string, v ...any) {
+	x.outputf(LevelFatal, f, v...)
+	panic("abort")
+}
+
 func (x Backend) Trace(v ...any) {
 	if !x.shouldLog(LevelTrace) {
 		return

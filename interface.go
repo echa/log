@@ -49,6 +49,8 @@ type Logger interface {
 	Errorf(f string, v ...any)
 	Fatal(v ...any)
 	Fatalf(f string, v ...any)
+	Panic(v ...any)
+	Panicf(f string, v ...any)
 	Level() Level
 	IsColor() bool
 	SetLevel(Level) Logger
@@ -75,6 +77,8 @@ func Debug(v ...any)            { Log.Debug(v...) }
 func Debugf(s string, v ...any) { Log.Debugf(s, v...) }
 func Fatal(v ...any)            { Log.Fatal(v...) }
 func Fatalf(s string, v ...any) { Log.Fatalf(s, v...) }
+func Panic(v ...any)            { Log.Panic(v...) }
+func Panicf(s string, v ...any) { Log.Panicf(s, v...) }
 
 func SetLevel(l Level) Logger { Log.SetLevel(l); return Log }
 
