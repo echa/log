@@ -83,11 +83,3 @@ func Panicf(s string, v ...any) { Log.Panicf(s, v...) }
 func SetLevel(l Level) Logger { Log.SetLevel(l); return Log }
 
 func SetLevelString(l string) Logger { return SetLevel(ParseLevel(l)) }
-
-func NewLogger(tag string) Logger {
-	if b, ok := Log.(*Backend); ok {
-		return b.NewLogger(tag)
-	} else {
-		return New(nil).WithTag(tag)
-	}
-}
