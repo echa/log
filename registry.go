@@ -29,7 +29,9 @@ func (r *registry) New(tag string) (logger Logger) {
 	if logger, ok := r.reg[tag]; ok {
 		return logger
 	} else {
-		return Log.Clone().WithTag(tag)
+		logger = Log.Clone().WithTag(tag)
+		r.reg[tag] = logger
+		return logger
 	}
 }
 
