@@ -26,13 +26,11 @@ func newRegistry() *registry {
 func (r *registry) New(tag string) (logger Logger) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if b, ok := Log.(*Backend); ok {
-		logger = b.NewLogger(tag)
+	if logger, ok := r.reg[tag]; ok {
+		return logger
 	} else {
-		logger = New(nil).WithTag(tag)
+		return Log.Clone().WithTag(tag)
 	}
-	r.reg[tag] = logger
-	return logger
 }
 
 func NewLogger(tag string) Logger {
@@ -56,15 +54,15 @@ func SetLevels(tag string, lvl Level) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	prefix, _, hasWildcard := strings.Cut(tag, wildcard)
+	prefix, suffix, hasWildcard := strings.Cut(tag, wildcard)
 	switch {
 	case !hasWildcard:
 		if log, ok := r.reg[tag]; ok {
 			log.SetLevel(lvl)
 		}
-	case hasWildcard && prefix != "":
+	case hasWildcard:
 		for k, v := range r.reg {
-			if strings.HasPrefix(k, prefix) {
+			if strings.HasPrefix(k, prefix) && strings.HasSuffix(k, suffix) {
 				v.SetLevel(lvl)
 			}
 		}
