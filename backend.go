@@ -26,10 +26,19 @@ type Backend struct {
 }
 
 var (
-	Log         Logger = New(NewConfig())
-	Disabled    Logger = &Backend{level: LevelOff, log: stdlog.Default()}
-	isColorTerm bool   = !color.NoColor
+	Log      Logger = New(NewConfig())
+	Disabled Logger = &Backend{level: LevelOff, log: stdlog.Default()}
 )
+
+func init() {
+	// reset color based on env var
+	disableColor := false
+	switch os.Getenv("LOGCOLOR") {
+	case "false", "off", "0":
+		disableColor = true
+	}
+	color.NoColor = color.NoColor || disableColor
+}
 
 const calldepth = 4
 
@@ -41,9 +50,6 @@ func New(c *Config) *Backend {
 	if c == nil {
 		c = NewConfig()
 	}
-	defaultProgressInterval = c.ProgressInterval
-	withColor := isColorTerm || os.Getenv("LOGCOLOR") != ""
-	color.NoColor = !withColor
 	switch strings.ToLower(c.Backend) {
 	case "file":
 		if c.Filename != "" {
@@ -62,9 +68,9 @@ func New(c *Config) *Backend {
 	case "syslog":
 		return NewSyslog(c)
 	case "stdout":
-		return &Backend{c.Level, stdlog.New(os.Stdout, "", c.Flags), "", nil, withColor}
+		return &Backend{c.Level, stdlog.New(os.Stdout, "", c.Flags), "", nil, !color.NoColor}
 	case "stderr":
-		return &Backend{c.Level, stdlog.New(os.Stderr, "", c.Flags), "", nil, withColor}
+		return &Backend{c.Level, stdlog.New(os.Stderr, "", c.Flags), "", nil, !color.NoColor}
 	default:
 		stdlog.Fatalln("FATAL: Invalid log backend", c.Backend)
 	}

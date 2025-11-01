@@ -111,7 +111,7 @@ func NewConfig() *Config {
 		Ident:            "logfile",
 		Filename:         "logfile.log",
 		FileMode:         0600,
-		ProgressInterval: 10 * time.Second,
+		ProgressInterval: defaultProgressInterval,
 	}
 	c.ParseEnv()
 	return c

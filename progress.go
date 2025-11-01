@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var defaultProgressInterval = 10 * time.Second
+const defaultProgressInterval = 10 * time.Second
 
 type ProgressLogger struct {
 	action      string
