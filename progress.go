@@ -13,6 +13,7 @@ import (
 const defaultProgressInterval = 10 * time.Second
 
 type ProgressLogger struct {
+	sync.Mutex
 	action      string
 	event       string
 	interval    time.Duration
@@ -20,7 +21,6 @@ type ProgressLogger struct {
 	events      int64
 	lastLogTime time.Time
 	logger      Logger
-	sync.Mutex
 }
 
 func NewProgressLogger(logger Logger) *ProgressLogger {

@@ -29,10 +29,15 @@ func NewSyslog(c *Config) *Backend {
 			stdlog.Fatalln("FATAL: Cannot open syslog address", c.Addr, ":", err.Error())
 		}
 		// don't 'print' date time
-		backend := &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		backend := &Backend{
+			level:  c.Level,
+			log:    stdlog.New(NewMultiWriter(writer), "", 0),
+			config: c,
+		}
 		runtime.SetFinalizer(backend, func(v any) {
 			b := v.(*Backend)
-			b.log.Writer().(*syslog.Writer).Close()
+			mw := b.log.Writer().(*MultiWriter)
+			(*mw.writers.Load())[0].(*syslog.Writer).Close()
 		})
 		return backend
 	} else {
@@ -44,10 +49,15 @@ func NewSyslog(c *Config) *Backend {
 			stdlog.Fatalln("FATAL: Cannot open syslog:", err.Error())
 		}
 		// don't 'print' date time
-		backend := &Backend{c.Level, stdlog.New(writer, "", 0), "", nil, false}
+		backend := &Backend{
+			level:  c.Level,
+			log:    stdlog.New(NewMultiWriter(writer), "", 0),
+			config: c,
+		}
 		runtime.SetFinalizer(backend, func(v any) {
 			b := v.(*Backend)
-			b.log.Writer().(*syslog.Writer).Close()
+			mw := b.log.Writer().(*MultiWriter)
+			(*mw.writers.Load())[0].(*syslog.Writer).Close()
 		})
 		return backend
 	}

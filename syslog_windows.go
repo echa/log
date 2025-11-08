@@ -9,6 +9,10 @@ import (
 )
 
 // no syslog on windows, write to stdout
-func NewSyslog(config *Config) *Backend {
-	return &Backend{config.Level, stdlog.New(os.Stdout, "", config.Flags), "", nil, false}
+func NewSyslog(c *Config) *Backend {
+	return &Backend{
+		level:  c.Level,
+		log:    stdlog.New(NewMultiWriter(os.Stdout), "", c.Flags),
+		config: c,
+	}
 }

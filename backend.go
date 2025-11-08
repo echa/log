@@ -18,16 +18,18 @@ import (
 )
 
 type Backend struct {
-	level    Level
 	log      *stdlog.Logger
+	reg      *Registry
 	tag      string
 	sampler  *Sampler
+	config   *Config
 	usecolor bool
+	level    Level
 }
 
 var (
 	Log      Logger = New(NewConfig())
-	Disabled Logger = &Backend{level: LevelOff, log: stdlog.Default()}
+	Disabled Logger = &Backend{level: LevelOff, log: stdlog.New(ioutil.Discard, "", 0)}
 )
 
 func init() {
@@ -40,7 +42,10 @@ func init() {
 	color.NoColor = color.NoColor || disableColor
 }
 
-const calldepth = 4
+const (
+	calldepth = 4
+	fileFlags = os.O_WRONLY | os.O_CREATE | os.O_APPEND
+)
 
 func Init(c *Config) {
 	Log = New(c)
@@ -53,54 +58,68 @@ func New(c *Config) *Backend {
 	switch strings.ToLower(c.Backend) {
 	case "file":
 		if c.Filename != "" {
-			if file, err := os.OpenFile(c.Filename,
-				os.O_WRONLY|os.O_CREATE|os.O_APPEND, c.FileMode); err == nil {
-				backend := &Backend{c.Level, stdlog.New(file, "", c.Flags), "", nil, false}
-				runtime.SetFinalizer(backend, func(v any) {
-					b := v.(*Backend)
-					b.log.Writer().(*os.File).Close()
-				})
-				return backend
-			} else {
+			file, err := os.OpenFile(c.Filename, fileFlags, c.FileMode)
+			if err != nil {
 				stdlog.Fatalln("FATAL: Cannot open logfile", c.Filename, ":", err.Error())
 			}
+			backend := &Backend{
+				level:  c.Level,
+				log:    stdlog.New(NewMultiWriter(file), "", c.Flags),
+				config: c,
+			}
+			runtime.SetFinalizer(backend, func(v any) {
+				b := v.(*Backend)
+				mw := b.log.Writer().(*MultiWriter)
+				(*mw.writers.Load())[0].(*os.File).Close()
+			})
+			return backend
 		}
 	case "syslog":
 		return NewSyslog(c)
 	case "stdout":
-		return &Backend{c.Level, stdlog.New(os.Stdout, "", c.Flags), "", nil, !color.NoColor}
+		return &Backend{
+			level:    c.Level,
+			log:      stdlog.New(NewMultiWriter(os.Stdout), "", c.Flags),
+			config:   c,
+			usecolor: !color.NoColor,
+		}
 	case "stderr":
-		return &Backend{c.Level, stdlog.New(os.Stderr, "", c.Flags), "", nil, !color.NoColor}
+		return &Backend{
+			level:    c.Level,
+			log:      stdlog.New(NewMultiWriter(os.Stderr), "", c.Flags),
+			config:   c,
+			usecolor: !color.NoColor,
+		}
 	default:
 		stdlog.Fatalln("FATAL: Invalid log backend", c.Backend)
 	}
 	return nil
 }
 
-func (x Backend) NewLogger(subsystem string) Logger {
-	return &Backend{
-		level:    x.level,
-		log:      x.log,
-		tag:      strings.TrimSpace(subsystem) + " ",
-		usecolor: x.usecolor,
-	}
-}
-
-func (x Backend) Clone() Logger {
-	return &Backend{
+func (x Backend) Clone(tag string) Logger {
+	b := &Backend{
 		level:    x.level,
 		log:      x.log,
 		tag:      x.tag,
 		sampler:  x.sampler.Clone(),
 		usecolor: x.usecolor,
 	}
+	if x.reg != nil {
+		x.reg.Add(tag, b)
+	}
+	return b.WithTag(tag)
 }
 
 func (x *Backend) WithTag(tag string) Logger {
 	tag = strings.TrimSpace(tag)
 	if tag != "" {
-		x.tag += tag + " "
+		x.tag += "[" + tag + "] "
 	}
+	return x
+}
+
+func (x *Backend) WithRegistry(r *Registry) Logger {
+	x.reg = r
 	return x
 }
 
@@ -115,7 +134,7 @@ func (x *Backend) WithColor(b bool) Logger {
 	return x
 }
 
-func (x *Backend) IsColor() bool {
+func (x Backend) IsColor() bool {
 	return x.usecolor
 }
 
@@ -124,9 +143,13 @@ func (x *Backend) WithFlags(f int) Logger {
 	return x
 }
 
-func (x *Backend) WithLogger(l *stdlog.Logger) Logger {
-	x.log = l
-	return x
+func (x *Backend) Attach(w io.Writer) {
+	x.log.Writer().(*MultiWriter).Add(w)
+	x.usecolor = false
+}
+
+func (x Backend) Detach(w io.Writer) {
+	x.log.Writer().(*MultiWriter).Remove(w)
 }
 
 func (x Backend) NewWriter(l Level) io.Writer {
@@ -137,6 +160,7 @@ func (x Backend) NewWriter(l Level) io.Writer {
 		level:    l,
 		log:      x.log,
 		tag:      x.tag,
+		config:   x.config,
 		usecolor: x.usecolor,
 	}
 	return writer
