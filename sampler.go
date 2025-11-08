@@ -18,7 +18,7 @@ var (
 	SampleFew = &Sampler{N: 1, Period: time.Minute}
 )
 
-// Sampler lets a burst of N events pass per Period. If Period is0,
+// Sampler lets a burst of N events pass per Period. If Period is 0,
 // every Nth event is allowed.
 type Sampler struct {
 	// N is the maximum number of event per period allowed.
@@ -26,8 +26,8 @@ type Sampler struct {
 	// Period defines the period.
 	Period time.Duration
 
-	counter uint32
-	resetAt int64
+	counter atomic.Uint32
+	resetAt atomic.Int64
 }
 
 func (s *Sampler) Clone() *Sampler {
@@ -52,7 +52,7 @@ func (s *Sampler) sampleSimple() bool {
 	if n == 1 {
 		return true
 	}
-	c := atomic.AddUint32(&s.counter, 1)
+	c := s.counter.Add(1)
 	return c%n == 1
 }
 
@@ -67,19 +67,18 @@ func (s *Sampler) samplePeriod() bool {
 
 func (s *Sampler) inc() uint32 {
 	now := time.Now().UnixNano()
-	resetAt := atomic.LoadInt64(&s.resetAt)
+	resetAt := s.resetAt.Load()
 	var c uint32
 	if now > resetAt {
 		c = 1
-		atomic.StoreUint32(&s.counter, c)
+		s.counter.Store(1)
 		newResetAt := now + s.Period.Nanoseconds()
-		reset := atomic.CompareAndSwapInt64(&s.resetAt, resetAt, newResetAt)
-		if !reset {
+		if !s.resetAt.CompareAndSwap(resetAt, newResetAt) {
 			// Lost the race with another goroutine trying to reset.
-			c = atomic.AddUint32(&s.counter, 1)
+			c = s.counter.Add(1)
 		}
 	} else {
-		c = atomic.AddUint32(&s.counter, 1)
+		c = s.counter.Add(1)
 	}
 	return c
 }
