@@ -11,50 +11,50 @@ import (
 const wildcard = "*"
 
 var (
-	r            = newRegistry()
-	NewLogger    = r.New
-	GetLogger    = r.Get
-	RemoveLogger = r.Remove
-	SetLevels    = r.SetLevels
+	DefaultRegistry = NewRegistry()
 )
 
-type registry struct {
+type Registry struct {
 	mu  sync.RWMutex
 	reg map[string]Logger
 }
 
-func newRegistry() *registry {
-	return &registry{
+func NewRegistry() *Registry {
+	return &Registry{
 		reg: make(map[string]Logger),
 	}
 }
 
-func (r *registry) New(tag string) (logger Logger) {
+func (r *Registry) Add(tag string, l Logger) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if logger, ok := r.reg[tag]; ok {
-		return logger
-	} else {
-		logger = Log.Clone().WithTag(tag)
-		r.reg[tag] = logger
-		return logger
-	}
+	r.reg[tag] = l
 }
 
-func (r *registry) Remove(tag string) {
+func (r *Registry) Remove(tag string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.reg, tag)
 }
 
-func (r *registry) Get(tag string) (Logger, bool) {
+func (r *Registry) Get(tag string) (Logger, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	logger, ok := r.reg[tag]
 	return logger, ok
 }
 
-func (r *registry) SetLevels(tag string, lvl Level) {
+func (r *Registry) GetLevels() map[string]Level {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	m := make(map[string]Level, len(r.reg))
+	for n, l := range r.reg {
+		m[n] = l.Level()
+	}
+	return m
+}
+
+func (r *Registry) SetLevels(tag string, lvl Level) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
