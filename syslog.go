@@ -37,7 +37,7 @@ func NewSyslog(c *Config) *Backend {
 		runtime.SetFinalizer(backend, func(v any) {
 			b := v.(*Backend)
 			mw := b.log.Writer().(*MultiWriter)
-			(*mw.writers.Load())[0].(*syslog.Writer).Close()
+			_ = (*mw.writers.Load())[0].(*syslog.Writer).Close()
 		})
 		return backend
 	} else {
@@ -57,7 +57,7 @@ func NewSyslog(c *Config) *Backend {
 		runtime.SetFinalizer(backend, func(v any) {
 			b := v.(*Backend)
 			mw := b.log.Writer().(*MultiWriter)
-			(*mw.writers.Load())[0].(*syslog.Writer).Close()
+			_ = (*mw.writers.Load())[0].(*syslog.Writer).Close()
 		})
 		return backend
 	}

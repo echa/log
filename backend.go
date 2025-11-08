@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	stdlog "log"
 	"os"
 	"runtime"
@@ -29,7 +28,7 @@ type Backend struct {
 
 var (
 	Log      Logger = New(NewConfig())
-	Disabled Logger = &Backend{level: LevelOff, log: stdlog.New(ioutil.Discard, "", 0)}
+	Disabled Logger = &Backend{level: LevelOff, log: stdlog.New(io.Discard, "", 0)}
 )
 
 func init() {
@@ -70,7 +69,7 @@ func New(c *Config) *Backend {
 			runtime.SetFinalizer(backend, func(v any) {
 				b := v.(*Backend)
 				mw := b.log.Writer().(*MultiWriter)
-				(*mw.writers.Load())[0].(*os.File).Close()
+				_ = (*mw.writers.Load())[0].(*os.File).Close()
 			})
 			return backend
 		}
@@ -154,7 +153,7 @@ func (x Backend) Detach(w io.Writer) {
 
 func (x Backend) NewWriter(l Level) io.Writer {
 	if x.level > l {
-		return ioutil.Discard
+		return io.Discard
 	}
 	writer := &Backend{
 		level:    l,
@@ -309,7 +308,7 @@ func (x Backend) output(lvl Level, v ...any) {
 	if x.usecolor {
 		print = levelColors[lvl].Sprint
 	}
-	x.log.Output(calldepth, print(m...))
+	_ = x.log.Output(calldepth, print(m...))
 }
 
 func (x Backend) outputf(lvl Level, f string, v ...any) {
@@ -320,7 +319,7 @@ func (x Backend) outputf(lvl Level, f string, v ...any) {
 	if x.usecolor {
 		print = levelColors[lvl].Sprintf
 	}
-	x.log.Output(calldepth, print(f, m...))
+	_ = x.log.Output(calldepth, print(f, m...))
 }
 
 func (x Backend) shouldLog(lvl Level) bool {

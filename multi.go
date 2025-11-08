@@ -32,7 +32,7 @@ func NewMultiWriter(writers ...io.Writer) *MultiWriter {
 // Write writes bytes to all writers and silently ignores all errors.
 func (mw *MultiWriter) Write(p []byte) (n int, err error) {
 	for _, w := range *mw.writers.Load() {
-		w.Write(p)
+		_, _ = w.Write(p)
 	}
 	return len(p), nil
 }
