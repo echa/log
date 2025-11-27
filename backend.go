@@ -143,8 +143,10 @@ func (x *Backend) WithFlags(f int) Logger {
 }
 
 func (x *Backend) Attach(w io.Writer) {
+	if _, ok := w.(*RingBuffer); !ok {
+		x.usecolor = false
+	}
 	x.log.Writer().(*MultiWriter).Add(w)
-	x.usecolor = false
 }
 
 func (x Backend) Detach(w io.Writer) {
